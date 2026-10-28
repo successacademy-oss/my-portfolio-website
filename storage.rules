@@ -1,0 +1,14 @@
+rules_version = '2';
+
+// Images are publicly readable (they're shown on the portfolio) but can
+// only be uploaded/deleted through the admin API routes using the Admin
+// SDK, which bypasses these rules under a verified, server-checked
+// request. Direct client uploads are blocked.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /projects/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

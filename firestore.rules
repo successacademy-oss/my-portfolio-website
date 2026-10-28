@@ -1,0 +1,39 @@
+rules_version = '2';
+
+// NOTE: client-side writes are blocked entirely here. All writes go
+// through the server-side admin API routes (src/app/api/admin/*), which
+// use the Firebase Admin SDK and verify the request against ADMIN_UID.
+// That is the actual security boundary — these rules are the backstop.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /projects/{projectId} {
+      allow read: if true;
+      allow write: if false; // writes only via Admin SDK on the server
+    }
+
+    match /services/{serviceId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /inquiries/{inquiryId} {
+      // Visitors may create an inquiry (the contact / service request
+      // form) but can never read, list, update or delete inquiries —
+      // only the admin, via the server, can do that.
+      allow create: if request.resource.data.keys().hasAll(
+                        ['service', 'name', 'email', 'createdAt']
+                      )
+                      && request.resource.data.name is string
+                      && request.resource.data.email is string
+                      && request.resource.data.name.size() < 200
+                      && request.resource.data.email.size() < 200;
+      allow read, update, delete: if false;
+    }
+  }
+}
